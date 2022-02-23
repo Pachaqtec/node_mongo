@@ -2,6 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const morgan = require('morgan')
 const cors = require('cors')
+const { verifyCredentials } = require('./src/utils/verify')
 
 require('dotenv').config()
 
@@ -11,6 +12,14 @@ app.use(express.json())
 app.use(express.urlencoded( { extended: true } ))
 app.use(morgan('dev'))
 app.use(cors())
+
+app.use((req, res, next) => {
+  if (req.path === '/user/login') {
+    return next()
+  }
+
+  verifyCredentials(req, res, next)
+})
 
 app.use('/user', require('./src/routes/user'))
 

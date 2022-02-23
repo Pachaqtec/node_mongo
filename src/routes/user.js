@@ -1,5 +1,6 @@
 const express = require('express')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 const User = require('../models/model.user')
 
 const app = express()
@@ -127,6 +128,51 @@ app.delete('/eliminar/:id', (req, res) => {
       message: 'El usuario ' + id + ' se eliminó'
     })
   })
+})
+
+app.post('/login', (req, res) => {
+  const { correo, contrasenia } = req.body
+
+  User.find({ correo }, (error, response) => {
+
+    if (error || response.length === 0) {
+      return res.status(500).json({
+        status: 500,
+        message: 'Las credenciales son incorrectas o no existen'
+      })
+    }
+
+    const { correo, estado, nombre, contrasenia: v_contrasenia } = response[0]
+
+    const validPassword = bcrypt.compareSync(contrasenia, v_contrasenia)
+
+    if (!validPassword) {
+      return res.json({
+        status: 500,
+        message: 'Contraseña incorrecta'
+      })
+    }
+
+    const payload = {
+      correo, estado, nombre
+    }
+
+    const A_DAY = 60
+
+    const token = jwt.sign(payload, process.env.SECRET_TOKEN, {
+      expiresIn: A_DAY,
+      algorithm: 'HS256'
+    })
+
+    return res.json({
+      status: 200,
+      usuario: {
+        correo, estado, nombre
+      },
+      token
+    })
+  })
+
 })
 
 module.exports = app
